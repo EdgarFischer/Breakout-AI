@@ -11,6 +11,7 @@ VGrid = 11
 YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
+# IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
 Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
 
 screen = tr.Screen()
@@ -38,7 +39,7 @@ TOP.color('lightblue')
 TOP.shape('square')
 TOP.goto(0, YPAD+50*(1+VGrid))
 TOP.shapesize(stretch_wid=2.5, stretch_len=2.5*(2+HGrid))
-########################### End of Fram definiton
+########################### End of Frame definiton
 
 
 paddle = Paddle(YPAD)
@@ -55,6 +56,8 @@ screen.onkey(key='Right', fun=paddle.move_right)
 
  
 def playing_game():
+    # Scheduling the next time iteration already here to ensure 5 fps.
+    # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
     tr.ontimer(playing_game, 200)
     ball.update(paddle, bricks, HGrid,VGrid,YPAD)
     paddle.update(HGrid)
@@ -62,9 +65,12 @@ def playing_game():
 
     if bricks.all_bricks_disappeared():
         print("GAME WON!")
-        # TODO game is won! Put here the code what happens in this case!
+        # game is won!
 
 
-
+# We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
 tr.ontimer(playing_game,200)
 tr.mainloop()
+
+# TODO @Edgar put your AI code here, outside the playing_game function to not run into UI issues.
+#  As outlined above, use the all_bricks_disappeared function to check if a game is won. Also, simply use paddle.moveX functions to interact with the game; no special interface needed

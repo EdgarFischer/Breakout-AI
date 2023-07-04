@@ -56,8 +56,10 @@ class Ball(Turtle):
         P5 = P4+50 # this is the center of the very right brick of the paddle
 
         # Next I define the speed the the ball has after hitting. There are 5 possibilities, each corresponding to one possible speed after collision
-        #the position is not changed only the speed upon collision with the paddle, because the absolute speed is always 1 in y direction
+        # the position is not changed only the speed upon collision with the paddle, because the absolute speed is always 1 in y direction
         # note that for the speed I follow the picture in the instruction
+
+        # NOTE for @Edgar: removed edge hit cases for paddle, in order to make it harder for the AI, and also the remove complexity (we would have to incorporate paddle speed etc to implement it properly)
         # if self.ycor() < YPAD +75 and abs(self.xcor()+50 - P1)<35  and self.vx > 0: #does it hit left pixel?
         #     self.vy = 1
         #     self.vx = -2
