@@ -1,20 +1,20 @@
 import turtle as tr
 from paddle import Paddle
 from ball import Ball
-from bricks import Brick
+from bricks import Bricks
 import math
-import time
+
  
 # Have a grid of HGrid x VGrid 
 HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
-VGrid = 10
-YPAD = -225 # set the permanent Y position of the paddle
+VGrid = 11
+YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
-Coordinates = [[0,9],[3,9],[-3,9]]
+Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
 
 screen = tr.Screen()
-screen.setup(width=780, height=600) # this should not be changed, to display the game correctly
+screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
 screen.bgcolor('black')
 screen.title('Breakout')
 screen.tracer(0)
@@ -43,12 +43,8 @@ TOP.shapesize(stretch_wid=2.5, stretch_len=2.5*(2+HGrid))
 
 paddle = Paddle(YPAD)
 ball = Ball(YPAD)
-
+bricks = Bricks(Coordinates, YPAD)
 # set the coordinate for Bricks
-
-Bricks = []
-for i in Coordinates:
-    Bricks.append(Brick(i[0],i[1],YPAD))
 
 playing_game = True
  
@@ -58,12 +54,17 @@ screen.onkey(key='Left', fun=paddle.move_left)
 screen.onkey(key='Right', fun=paddle.move_right)
 
  
-while playing_game:
-    ball.update(paddle, HGrid,VGrid,YPAD)
+def playing_game():
+    tr.ontimer(playing_game, 200)
+    ball.update(paddle, bricks, HGrid,VGrid,YPAD)
     paddle.update(HGrid)
     screen.update()
-    
-    time.sleep(0.2) # this defines the framerate
 
- 
+    if bricks.all_bricks_disappeared():
+        print("GAME WON!")
+        # TODO game is won! Put here the code what happens in this case!
+
+
+
+tr.ontimer(playing_game,200)
 tr.mainloop()

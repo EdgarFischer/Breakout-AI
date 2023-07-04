@@ -1,0 +1,3 @@
+To get the game running, you need to install Turtle/Tkinter via the following command (on Ubuntu):
+
+sudo apt-get install python3-tk
