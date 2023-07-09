@@ -9,7 +9,7 @@ import random
 class Tabular:   # the tabular object creates a state-action table with all possibilities
     def __init__(self,Coordinates, HGrid, VGrid):
         N = len(Coordinates)
-        self.QA = np.zeros((HGrid, VGrid, 5, 2, HGrid-5, 5, 2**N, 3), dtype=np.int32)   
+        self.QA = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3), dtype=np.int32)   
         # QA will be the value function for state action pairs. For easier accessbility
         # I use a multidimensional tensor to save all state action pais using the numpy library
         # the logic is as follows:
@@ -111,7 +111,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         YB = random.randint(0, VGrid-1)
         VBX = random.randint(0, 4)
         VBY = random.randint(0, 1)
-        XP = random.randint(0, HGrid-6)
+        XP = random.randint(0, HGrid-5)
         VP = random.randint(0, 4)
         BRICKS =random.randint(0, 2**N-1)
 
@@ -120,7 +120,9 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
     def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E): # take an epsilon greedy action, E is the probability of a random action
         # first I need to retreive the state of the game
+        print(self.QA.shape)
         state = self.get_state(ball, paddle, HGrid, YPad, Bricks)
+        print(state)
         Left = np.append(state, 0).astype(int) # possible actions Left, Right or no paddle movement change
         Right = np.append(state, 1).astype(int)
         Zero = np.append(state, 2).astype(int)
@@ -144,9 +146,9 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         Move = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E)
 
         if Move == 0:
-            paddle.move_left
+            paddle.move_left()
         elif Move == 1:
-            paddle.move_right
+            paddle.move_right()
 
         ball.update(paddle, Bricks, HGrid, VGrid, YPad)
         paddle.update(HGrid)
