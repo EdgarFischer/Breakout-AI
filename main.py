@@ -2,17 +2,17 @@ import turtle as tr
 from paddle import Paddle
 from ball import Ball
 from bricks import Bricks
+from TabularRL import Tabular
 import math
-
  
 # Have a grid of HGrid x VGrid 
-HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
-VGrid = 11
+HGrid = 13 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+VGrid = 9 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+Coordinates = [[-3,7],[0,7],[3,7]]
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -47,6 +47,27 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 # set the coordinate for Bricks
 
+# set the initial state of the game, this refers to the indices of the QA table
+
+XB = 1
+YB = 1
+VBX = 1
+VBY = 1
+XP = 2 
+VP = 2
+BRICKS = 7
+
+Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
+
+#alternatively set a random initial state
+
+XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, bricks)
+Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
+
+
+############## end of setting state
+
+
 playing_game = True
  
  
@@ -68,9 +89,13 @@ def playing_game():
         # game is won!
 
 
+
+
+
 # We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
 tr.ontimer(playing_game,200)
 tr.mainloop()
 
 # TODO @Edgar put your AI code here, outside the playing_game function to not run into UI issues.
 #  As outlined above, use the all_bricks_disappeared function to check if a game is won. Also, simply use paddle.moveX functions to interact with the game; no special interface needed
+

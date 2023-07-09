@@ -90,3 +90,36 @@ class Bricks:
     #                 for j in range(len(self.brick_array)):
     #                     otherbrick = self.brick_array[j]
     #     return False
+
+#import numpy as np
+
+#HGrid = 13
+#VGrid = 9
+#YPAD = -275
+#Coordinates = [[-3, 7], [0, 7], [3, 7]]
+#N = 3
+
+#A = np.zeros((HGrid, VGrid, 5, 2, HGrid-5, 5, 2**N, 3), dtype=np.int32)
+#print(A.shape)
+
+#B = np.array([1, 1, 1, 1, 0, 1, 1, 1])
+
+#print(A[1, 1, 1, 1, 1, 1, 1, 1])
+#print(A[1, 1, 1, 1, 0, 1, 1, 1])
+
+# Create an open mesh grid of indices using np.ix_()
+#indexer = (1, 1, 1, 1, 0, 1, 1)
+
+# Use tuple unpacking to index the array A
+#print(A[indexer,1])
+
+
+
+
+
+
+
+
+
+
+
