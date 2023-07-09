@@ -60,10 +60,10 @@ class Ball(Turtle):
         # note that for the speed I follow the picture in the instruction
 
         # NOTE for @Edgar: removed edge hit cases for paddle, in order to make it harder for the AI, and also the remove complexity (we would have to incorporate paddle speed etc to implement it properly)
-        # if self.ycor() < YPAD +75 and abs(self.xcor()+50 - P1)<35  and self.vx > 0: #does it hit left pixel?
-        #     self.vy = 1
-        #     self.vx = -2
-        if abs(self.ycor() + (self.vy * MOVE) - YPAD) < 35 and abs(self.xcor() - P1)<35: #does it hit left pixel?
+        if self.ycor() < YPAD +75 and abs(self.xcor()+50 - P1)<35  and self.vx > 0: #does it hit left pixel?
+             self.vy = 1
+             self.vx = -2
+        elif abs(self.ycor() + (self.vy * MOVE) - YPAD) < 35 and abs(self.xcor() - P1)<35: #does it hit left pixel?
             self.vy = 1
             self.vx = -2 
         elif abs(self.ycor() + (self.vy * MOVE) - YPAD) < 35 and abs(self.xcor() - P2)<35:
@@ -90,10 +90,8 @@ class Ball(Turtle):
         # first I check for collisions with the paddle
         # The paddle has the highest priority, if a collision with the paddle happens, this is used to determine the ball
         # everything else is not checked anymore
-        B = False
         A = self.paddle_collision(paddle, YPAD)
-        if not A:
-            B = self.wall_collision(paddle,bricks,HGrid,VGrid,YPAD)
+        B = self.wall_collision(paddle,bricks,HGrid,VGrid,YPAD)
 
         if not B and not A:
             bricks.check_for_collisions(self)

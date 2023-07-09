@@ -6,13 +6,13 @@ from TabularRL import Tabular
 import math
  
 # Have a grid of HGrid x VGrid 
-HGrid = 13 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
-VGrid = 9 # has to be an uneven number!
+HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[-3,7],[0,7],[3,7]]
+Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -55,13 +55,13 @@ VBX = 1
 VBY = 1
 XP = 2 
 VP = 2
-BRICKS = 7
+BRICKS = 0
 
 Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
 #alternatively set a random initial state
 
-XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, bricks)
+#XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, bricks)
 Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
 
@@ -88,12 +88,23 @@ def playing_game():
         print("GAME WON!")
         # game is won!
 
+Test = Tabular(Coordinates, HGrid, VGrid)
+def playing_gameAI():
 
+    # Scheduling the next time iteration already here to ensure 5 fps.
+    # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
+    tr.ontimer(playing_gameAI, 50)
+    Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
+    screen.update()
+
+    if bricks.all_bricks_disappeared():
+        print("GAME WON!")
+        # game is won!
 
 
 
 # We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
-tr.ontimer(playing_game,200)
+tr.ontimer(playing_gameAI,200)
 tr.mainloop()
 
 # TODO @Edgar put your AI code here, outside the playing_game function to not run into UI issues.

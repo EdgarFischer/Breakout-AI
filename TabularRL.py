@@ -167,7 +167,37 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         Timesteps = 0
 
-        while bricks.all_bricks_disappeared() == False and Timesteps != MAX:
+        print("Test")
+
+        print(self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1])
+
+        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and Timesteps != MAX:
+            print(Timesteps)
+            Timesteps += 1
+            self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
+        if Timesteps == MAX:
+            print("Game lost in allowed timesteps")
+        else:
+            print("Game won!!!")
+
+    # next a visualized episode
+    def ES_EpisodeV(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None): #play a full episode and update QA in the end
+        # first I initialize a random start in the middle of th episode, as is typical for an exploring start training mechanism
+        XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
+        # next I initialize a random action 
+        Action = random.randint(0, 2)  
+        if Action == 0:
+            paddle.move_left
+        elif Action == 1:
+            paddle.move_right
+
+        Timesteps = 0
+
+        print("Test")
+
+        print(self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1])
+
+        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and Timesteps != MAX:
             print(Timesteps)
             Timesteps += 1
             self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
@@ -178,21 +208,21 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
 
 #Have a grid of HGrid x VGrid 
-HGrid = 13 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
-VGrid = 9 
-YPAD = -275 # set the permanent Y position of the paddle
-Coordinates = [[-3,7],[0,7],[3,7]]
+#HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+#VGrid = 11 
+#YPAD = -275 # set the permanent Y position of the paddle
+#Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
 
-paddle = Paddle(YPAD)
+#paddle = Paddle(YPAD)
 
-ball = Ball(YPAD)
+#ball = Ball(YPAD)
 
-bricks = Bricks(Coordinates, YPAD)
+#bricks = Bricks(Coordinates, YPAD)
 
-Test = Tabular(Coordinates, HGrid, VGrid)
+#Test = Tabular(Coordinates, HGrid, VGrid)
 
-MAX =1000
-Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True, MAX)
+#MAX = 300
+#Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True, MAX)
 
 ### ##set state
 #XB = 1
