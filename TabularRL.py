@@ -1,15 +1,19 @@
 import numpy as np
-from turtle import Turtle
+import turtle as tr
 from paddle import Paddle
 from ball import Ball
 from bricks import Bricks
 import math
 import random
+import pickle
+import os
 
 class Tabular:   # the tabular object creates a state-action table with all possibilities
     def __init__(self,Coordinates, HGrid, VGrid):
         N = len(Coordinates)
         self.QA = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3), dtype=np.int32)   
+        self.AReturns = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3,), dtype=np.int32) #average returns
+        self.COUNTER = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3,), dtype=np.int32)
         # QA will be the value function for state action pairs. For easier accessbility
         # I use a multidimensional tensor to save all state action pais using the numpy library
         # the logic is as follows:
@@ -21,8 +25,25 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         # 6. x-speed of paddle
         # 7. does brick exist y/bn
         # 8. take action left / right / none
-        # Each entry of this typically large array contains the estimated 
-    
+
+        # note that the COUNTER simply counts how often states have occured. This is important
+        # for updating averages without having to save all elements that have occurred.
+
+    # Save Tabular object to a file in the current working directory
+    @staticmethod
+    def save_tabular_object(tabular_obj, file_name):
+        file_path = os.path.join(os.getcwd(), file_name)
+        with open(file_path, 'wb') as file:
+            pickle.dump(tabular_obj, file)
+
+    # Load Tabular object from a file in the current working directory
+    @staticmethod
+    def load_tabular_object(file_name):
+        file_path = os.path.join(os.getcwd(), file_name)
+        with open(file_path, 'rb') as file:
+            tabular_obj = pickle.load(file)
+        return tabular_obj
+
     @staticmethod
     def get_brick_existence(bricks): # checks which brick is still in the game
         N = len(bricks.brick_array)
@@ -118,19 +139,16 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return XB, YB, VBX, VBY, XP, VP, BRICKS
 
-
     def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E): # take an epsilon greedy action, E is the probability of a random action
         # first I need to retreive the state of the game
         state = self.get_state(ball, paddle, HGrid, YPad, Bricks)
-        print(state)
         Left = np.append(state, 0).astype(int) # possible actions Left, Right or no paddle movement change
         Right = np.append(state, 1).astype(int)
         Zero = np.append(state, 2).astype(int)
 
         LeftQ = self.QA[tuple(Left)]
         RightQ = self.QA[tuple(Right)]
-        ZeroQ = self.QA[tuple(Zero)]
-                        
+        ZeroQ = self.QA[tuple(Zero)]     
 
         max_value = np.array([LeftQ, RightQ, ZeroQ])
         max_indices = np.where(np.array([LeftQ,RightQ,ZeroQ]) == max_value)[0]
@@ -155,63 +173,69 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return None
     
-    def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None): #play a full episode and update QA in the end
-        # first I initialize a random start in the middle of th episode, as is typical for an exploring start training mechanism
+    def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, state = None): #play a full episode and update QA in the end
+        # first I initialize a random start in the middle of the episode, as is typical for an exploring start training mechanism
         XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
+        self.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPad,HGrid, ball, paddle, Bricks)
         # next I initialize a random action 
+
         Action = random.randint(0, 2)  
         if Action == 0:
-            paddle.move_left
+            paddle.move_left()
         elif Action == 1:
-            paddle.move_right
+            paddle.move_right()
 
-        Timesteps = 0
+        SA = [] # these are the state-action pairs for this episode
 
-        print("Test")
+        state_action = self.get_state(ball, paddle, HGrid, YPad, Bricks).tolist() 
+        state_action.append(Action)
+        state_action = tuple(int(x) for x in state_action)
+        SA.append(state_action)
 
-        print(self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1])
-
-        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and Timesteps != MAX:
-            print(Timesteps)
-            Timesteps += 1
+        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0:
+            state_action = self.get_state(ball, paddle, HGrid, YPad, Bricks).tolist() 
+            state_action.append(Action)
+            state_action = tuple(int(x) for x in state_action)
+            SA.append(state_action)
             self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
-        if Timesteps == MAX:
-            print("Game lost in allowed timesteps")
-        else:
-            print("Game won!!!")
 
-    # next a visualized episode
-    def ES_EpisodeV(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None): #play a full episode and update QA in the end
-        # first I initialize a random start in the middle of th episode, as is typical for an exploring start training mechanism
-        XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
-        # next I initialize a random action 
-        Action = random.randint(0, 2)  
-        if Action == 0:
-            paddle.move_left
-        elif Action == 1:
-            paddle.move_right
+        reversed_SA = SA[::-1] # lastly I update the QA table
+        Return = 0
+        i=0
+        for x in reversed_SA:
+            Return += -1
+            # I apply first visit MC
+            dummy = reversed_SA[(i+1):]
+            i = i+1
+            if x not in dummy:
+                Sum = self.AReturns[x]*self.COUNTER[x]
+                Sum += Return
+                self.COUNTER[x] += 1 # state has occured one more time
+                self.AReturns[x] = Sum/self.COUNTER[x] # new average Return
+                self.QA[x] = self.AReturns[x] # new average Return
 
-        Timesteps = 0
-
-        print("Test")
-
-        print(self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1])
-
-        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and Timesteps != MAX:
-            print(Timesteps)
-            Timesteps += 1
-            self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
-        if Timesteps == MAX:
-            print("Game lost in allowed timesteps")
-        else:
-            print("Game won!!!")
-
+        return Return
+    # train for Episodes numeber of episodes, print average return for every average number of episodes
+    def Train(self, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, state = None):
+        ReturnFifty = 0
+        for i in range(0,Episodes):
+            ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND)
+            if i%average == 0:
+                print(i)
+                print(ReturnFifty/average)
+                ReturnFifty=0
 
 #Have a grid of HGrid x VGrid 
 #HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
 #VGrid = 11 
 #YPAD = -275 # set the permanent Y position of the paddle
 #Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+
+#screen = tr.Screen()
+#screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
+#screen.bgcolor('black')
+#screen.title('Breakout')
+#screen.tracer(0)
 
 #paddle = Paddle(YPAD)
 
@@ -220,45 +244,16 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 #bricks = Bricks(Coordinates, YPAD)
 
 #Test = Tabular(Coordinates, HGrid, VGrid)
+#Test=Tabular.load_tabular_object("Save")
 
-#MAX = 300
-#Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True, MAX)
+#OUT=Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True)
+#ReturnFifty = 0
+#for i in range(0,1000):
+#    ReturnFifty += Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True)
+#    if i%50 == 0:
+#        print(i)
+#        print(ReturnFifty/50)
+#        ReturnFifty=0
 
-### ##set state
-#XB = 1
-#YB = 1
-#VBX = 1
-#VBY = 1
-#XP = 3
-#VP = -1
-#BRICKS = 6
 
-#Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
-
-#print(Tabular.get_ball_pos(ball, HGrid, YPAD))
-
-#####
-
-#Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0.1)
-
-#print(Tabular.get_ball_pos(ball, HGrid, YPAD))
-
-#print(round(paddle.xcor()//50))
-
-#print(Tabular.get_paddle_pos(paddle, HGrid))
-
-#print(Tabular.get_ball_pos(ball, HGrid, YPAD))
-
-#print(Test.QA.shape)
-
-#bricks = Bricks(Coordinates, YPAD)
-
-#bricks.brick_array[1].hideturtle()
-
-#T= Tabular(Coordinates, HGrid, VGrid)
-
-#print(Test.Egreedy_move(ball, paddle, HGrid, YPAD, bricks, 0.1))
-
-#print(Test.get_state(ball, paddle, HGrid, YPAD, bricks))
-
-#print(Tabular.get_brick_existence(bricks))
+#Tabular.save_tabular_object(Test, "Save")        

@@ -6,13 +6,13 @@ from TabularRL import Tabular
 import math
  
 # Have a grid of HGrid x VGrid 
-HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+HGrid = 11 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
 VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+Coordinates = [[0,9],[3,9],[-3,9]]
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -57,12 +57,12 @@ XP = 2
 VP = 2
 BRICKS = 0
 
-Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
+#Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
 #alternatively set a random initial state
 
 #XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, bricks)
-Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
+#Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
 
 ############## end of setting state
@@ -74,7 +74,6 @@ playing_game = True
 screen.listen()
 screen.onkey(key='Left', fun=paddle.move_left)
 screen.onkey(key='Right', fun=paddle.move_right)
-
  
 def playing_game():
     # Scheduling the next time iteration already here to ensure 5 fps.
@@ -89,11 +88,16 @@ def playing_game():
         # game is won!
 
 Test = Tabular(Coordinates, HGrid, VGrid)
+N = 500000 # number of episodes for training
+N2 = 1000 # print average return of N2 number of episodes very N2 number of episodes
+E=0.1
+Test.Train(N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, 0.1, True)
+
 def playing_gameAI():
 
     # Scheduling the next time iteration already here to ensure 5 fps.
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
-    tr.ontimer(playing_gameAI, 1000)
+    tr.ontimer(playing_gameAI, 100)
     screen.update()
     Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
     
