@@ -93,9 +93,10 @@ def playing_gameAI():
 
     # Scheduling the next time iteration already here to ensure 5 fps.
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
-    tr.ontimer(playing_gameAI, 50)
-    Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
+    tr.ontimer(playing_gameAI, 1000)
     screen.update()
+    Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
+    
 
     if bricks.all_bricks_disappeared():
         print("GAME WON!")

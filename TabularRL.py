@@ -29,17 +29,18 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         output = np.zeros(N, dtype=np.int32) 
         i = 0
         for brick in bricks.brick_array:
-            if brick.isvisible(): # check if brick is still in the game
+            if brick.isvisible(): # check if brick is still in the game 1 = yes 0 = no
                 output[i] = 1
             i = i+1
         # so far output contains N entries with 1 (brick there) of 0 (not there). I want to convert that into a single number
         # for which I interpret that as a base 2 representation of a natural number
         OUT = 0
         i=0
-        for k in output:
-            OUT += output[k]*2**(i)
+        reversed_output = output[::-1] # note that the last element refers to 0 or 1, second last to 2 or 0 etc thats why I reverse the array
+        for k in reversed_output:
+            OUT += reversed_output[i]*2**(i)
             i = i+1
-        return OUT
+        return int(OUT)
     
     @staticmethod
     def get_paddle_pos(paddle, HGrid): # note that the paddle position is so far saved in pixel position, not on the game grid of HGrid x VGrid
@@ -120,7 +121,6 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
     def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E): # take an epsilon greedy action, E is the probability of a random action
         # first I need to retreive the state of the game
-        print(self.QA.shape)
         state = self.get_state(ball, paddle, HGrid, YPad, Bricks)
         print(state)
         Left = np.append(state, 0).astype(int) # possible actions Left, Right or no paddle movement change

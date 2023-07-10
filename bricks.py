@@ -1,4 +1,5 @@
 from brick import Brick
+import numpy as np
 
 # Collection class for all bricks in the game instance
 
@@ -113,7 +114,15 @@ class Bricks:
 # Use tuple unpacking to index the array A
 #print(A[indexer,1])
 
+N=5
+output = np.zeros(N, dtype=np.int32) 
 
+OUT = 0
+i=0
+for k in output:
+    OUT += output[k]*2**(i)
+    i = i+1
+print(OUT)
 
 
 
