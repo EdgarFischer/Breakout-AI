@@ -96,6 +96,25 @@ class Ball(Turtle):
         if not B and not A:
             bricks.check_for_collisions(self)
 
-        self.setx(self.xcor()+self.vx*MOVE)
-        self.sety(self.ycor()+self.vy*MOVE)
+        # very rarely (once ever few hundred thausand time steps) it happens that the ball has a y value beyond the allowed range
+        # hence I force it to not be able to do that
+        MIN = -(HGrid/2)*50+0.5*50
+        MAX = -1*MIN
+        MINY= YPAD
+        MAXY= YPAD + VGrid*50
+
+        new_X = self.xcor()+self.vx*MOVE
+        new_Y = self.ycor()+self.vy*MOVE
+
+        if new_X < MIN:
+            new_X = MIN
+        elif new_X > MAX:
+            new_X = MAX
+        elif new_Y < MINY:
+            new_Y=MINY
+        elif new_Y > MAXY:
+            new_Y=MAXY
+
+        self.setx(new_X)
+        self.sety(new_Y)
 
