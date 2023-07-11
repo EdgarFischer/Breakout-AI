@@ -173,7 +173,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return Move
     
-    def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, state = None): #play a full episode and update QA in the end
+    def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None): #play a full episode and update QA in the end
         
         # first I initialize a random start in the middle of the episode, as is typical for an exploring start training mechanism
         XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
@@ -194,7 +194,8 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         ball.update(paddle, Bricks, HGrid, VGrid, YPad)
         paddle.update(HGrid)
 
-        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0:
+        timestep = 0
+        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and timestep<MAX:
             state_action = self.get_state(ball, paddle, HGrid, YPad, Bricks).tolist() 
 
             Action = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E)    # you have to define the correct epsilon greedy action here
@@ -203,6 +204,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
             state_action = tuple(int(x) for x in state_action)
             SA.append(state_action)
             self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
+            timestep += 1
 
         reversed_SA = SA[::-1] # lastly I update the QA table
         Return = 0
@@ -221,11 +223,16 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return Return
     # train for Episodes numeber of episodes, print average return for every average number of episodes
-    def Train(self, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, state = None):
+    def Train(self, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None):
+        Episode=[]
+        Returns=[]
         ReturnFifty = 0
         for i in range(0,Episodes):
-            ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND)
-            if i%average == 0:
+            ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX)
+            if i%average == 0 and not i == 0:
                 print(i)
                 print(ReturnFifty/average)
+                Episode.append(i)
+                Returns.append(ReturnFifty/average)
                 ReturnFifty=0
+        return Episode, Returns

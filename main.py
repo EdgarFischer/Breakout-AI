@@ -6,15 +6,17 @@ from TabularRL import Tabular
 import math
 import numpy as np
 import random
+import matplotlib.pyplot as plt
  
 # Have a grid of HGrid x VGrid 
-HGrid = 13 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
 VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[0,9],[3,9],[-3,9]]
+Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+AI = Tabular.load_tabular_object('Qtable1') # load the correct AI here
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -49,26 +51,16 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 # set the coordinate for Bricks
 
-# set the initial state of the game, this refers to the indices of the QA table
-
-XB = 1
-YB = 1
-VBX = 1
-VBY = 1
-XP = 2 
-VP = 2
-BRICKS = 7
-
-#Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
-
-#alternatively set a random initial state
-
-#XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, bricks)
-#Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
-
-
-############## end of setting state
-
+# save the initial state, to be able to restart the game properly when watich the AI
+state = AI.get_state( ball, paddle, HGrid, YPAD, bricks)
+XB = state[0]
+YB = state[1]
+VBX= state[2]
+VBY= state[3]
+XP= state[4]
+VP=state[5]
+BRICKS = state[6]
+######################
 
 playing_game = True
  
@@ -89,12 +81,6 @@ def playing_game():
         print("GAME WON!")
         # game is won!
 
-Test = Tabular(Coordinates, HGrid, VGrid)
-N = 100000 # number of episodes for training
-N2 = 1000 # print average return of N2 number of episodes very N2 number of episodes
-E=0 # possible epsilon for epsilon greedy. Has to be set to 0 to guarante convergence
-Test.Train(N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, E, True)
-
 Return = 0
 def playing_gameAI():
     global Return
@@ -102,7 +88,7 @@ def playing_gameAI():
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
     tr.ontimer(playing_gameAI, 100)
     screen.update()
-    Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
+    AI.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
     Return += -1
     if bricks.all_bricks_disappeared():
         print("GAME WON!")
@@ -113,9 +99,6 @@ def playing_gameAI():
         #restart game
         Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
-
-#print(np.sum(Test.QA))
-#print(np.sum(Test.AReturns))
 
 # We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
 
