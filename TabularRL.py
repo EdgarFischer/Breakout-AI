@@ -150,11 +150,11 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         RightQ = self.QA[tuple(Right)]
         ZeroQ = self.QA[tuple(Zero)]     
 
-        max_value = np.array([LeftQ, RightQ, ZeroQ])
+        max_value = np.max(np.array([LeftQ, RightQ, ZeroQ]))
         max_indices = np.where(np.array([LeftQ,RightQ,ZeroQ]) == max_value)[0]
         random_index = random.choice(max_indices)
 
-        if random.random() <= E: # random move with probability E
+        if random.random() < E: # random move with probability E
             return random.randint(0, 2)   
         else:
             return random_index
