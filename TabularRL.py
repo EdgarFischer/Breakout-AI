@@ -171,14 +171,14 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         ball.update(paddle, Bricks, HGrid, VGrid, YPad)
         paddle.update(HGrid)
 
-        return None
+        return Move
     
     def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, state = None): #play a full episode and update QA in the end
+        
         # first I initialize a random start in the middle of the episode, as is typical for an exploring start training mechanism
         XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
         self.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPad,HGrid, ball, paddle, Bricks)
         # next I initialize a random action 
-
         Action = random.randint(0, 2)  
         if Action == 0:
             paddle.move_left()
@@ -191,9 +191,14 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         state_action.append(Action)
         state_action = tuple(int(x) for x in state_action)
         SA.append(state_action)
+        ball.update(paddle, Bricks, HGrid, VGrid, YPad)
+        paddle.update(HGrid)
 
         while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0:
             state_action = self.get_state(ball, paddle, HGrid, YPad, Bricks).tolist() 
+
+            Action = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E)    # you have to define the correct epsilon greedy action here
+
             state_action.append(Action)
             state_action = tuple(int(x) for x in state_action)
             SA.append(state_action)
@@ -224,36 +229,3 @@ class Tabular:   # the tabular object creates a state-action table with all poss
                 print(i)
                 print(ReturnFifty/average)
                 ReturnFifty=0
-
-#Have a grid of HGrid x VGrid 
-#HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
-#VGrid = 11 
-#YPAD = -275 # set the permanent Y position of the paddle
-#Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
-
-#screen = tr.Screen()
-#screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
-#screen.bgcolor('black')
-#screen.title('Breakout')
-#screen.tracer(0)
-
-#paddle = Paddle(YPAD)
-
-#ball = Ball(YPAD)
-
-#bricks = Bricks(Coordinates, YPAD)
-
-#Test = Tabular(Coordinates, HGrid, VGrid)
-#Test=Tabular.load_tabular_object("Save")
-
-#OUT=Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True)
-#ReturnFifty = 0
-#for i in range(0,1000):
-#    ReturnFifty += Test.ES_Episode(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, True)
-#    if i%50 == 0:
-#        print(i)
-#        print(ReturnFifty/50)
-#        ReturnFifty=0
-
-
-#Tabular.save_tabular_object(Test, "Save")        

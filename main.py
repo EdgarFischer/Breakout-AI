@@ -4,9 +4,11 @@ from ball import Ball
 from bricks import Bricks
 from TabularRL import Tabular
 import math
+import numpy as np
+import random
  
 # Have a grid of HGrid x VGrid 
-HGrid = 11 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
+HGrid = 13 # dont set below 5 otherwise the paddle is too large! it should also be an uneven number
 VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
@@ -55,7 +57,7 @@ VBX = 1
 VBY = 1
 XP = 2 
 VP = 2
-BRICKS = 0
+BRICKS = 7
 
 #Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
@@ -88,30 +90,36 @@ def playing_game():
         # game is won!
 
 Test = Tabular(Coordinates, HGrid, VGrid)
-N = 500000 # number of episodes for training
+N = 100000 # number of episodes for training
 N2 = 1000 # print average return of N2 number of episodes very N2 number of episodes
-E=0.1
-Test.Train(N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, 0.1, True)
+E=0 # possible epsilon for epsilon greedy. Has to be set to 0 to guarante convergence
+Test.Train(N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, E, True)
 
+Return = 0
 def playing_gameAI():
-
+    global Return
     # Scheduling the next time iteration already here to ensure 5 fps.
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
     tr.ontimer(playing_gameAI, 100)
     screen.update()
     Test.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0)
-    
-
+    Return += -1
     if bricks.all_bricks_disappeared():
         print("GAME WON!")
-        # game is won!
+        print('Return:')
+        print(Return)
+        Return = 0
+        VBY = random.randint(0, 4) # random starting position of ball
+        #restart game
+        Tabular.set_state(XB, YB, VBX, VBY, XP, VP, BRICKS, YPAD,HGrid, ball, paddle, bricks)
 
 
+#print(np.sum(Test.QA))
+#print(np.sum(Test.AReturns))
 
 # We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
+
 tr.ontimer(playing_gameAI,200)
 tr.mainloop()
 
-# TODO @Edgar put your AI code here, outside the playing_game function to not run into UI issues.
-#  As outlined above, use the all_bricks_disappeared function to check if a game is won. Also, simply use paddle.moveX functions to interact with the game; no special interface needed
 
