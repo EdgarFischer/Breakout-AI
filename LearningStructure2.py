@@ -27,7 +27,7 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 
 AI = Tabular(Coordinates, HGrid, VGrid)
-N = 100000 # number of episodes for training
+N = 10000 # number of episodes for training
 N2 = 500 # print average return of N2 number of episodes very N2 number of episodes
 Episode, Returns = AI.Train(TabularRL.STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT, TabularRL.EPISODE_SETTING_GAME, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, 0.02, None)
 

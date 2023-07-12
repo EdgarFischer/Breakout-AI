@@ -18,7 +18,6 @@ class Tabular:   # the tabular object creates a state-action table with all poss
     def __init__(self,Coordinates, HGrid, VGrid):
         N = len(Coordinates)
         self.QA = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3), dtype=np.int32)   
-        self.AReturns = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3,), dtype=np.int32) #average returns
         self.COUNTER = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3,), dtype=np.int32)
         # QA will be the value function for state action pairs. For easier accessbility
         # I use a multidimensional tensor to save all state action pais using the numpy library
@@ -210,15 +209,16 @@ class Tabular:   # the tabular object creates a state-action table with all poss
             reward -= 1
             current_sa = reversed_SA[i]
             if strategy == STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT or current_sa not in reversed_SA[(i + 1):]:
-                Sum = self.AReturns[current_sa] * self.COUNTER[current_sa]
+                Sum = self.QA[current_sa] * self.COUNTER[current_sa]
                 Sum += reward
                 self.COUNTER[current_sa] += 1  # state has occured one more time
-                self.AReturns[current_sa] = Sum / self.COUNTER[current_sa]  # new average Return
-                self.QA[current_sa] = self.AReturns[current_sa]  # new average Return
-
+                self.QA[current_sa] = Sum / self.COUNTER[current_sa]  # new average Return     
+                
         return reward
 
-    def ES_Episode(self, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX): #play a full episode and update QA in the end
+    def ES_Episode(self, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, GAME): #play a full episode and update QA in the end
+        # if GAME is set to true, the game ends after the ball passes the paddle,
+        # other wise the game is reset
         
         # first I initialize a random start in the middle of the episode, as is typical for an exploring start training mechanism
         XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
@@ -238,9 +238,13 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         SA.append(state_action)
         ball.update(paddle, Bricks, HGrid, VGrid, YPad)
         paddle.update(HGrid)
-
+        Lost = 0 # game lost y/n
         timestep = 0
         while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and timestep<MAX:
+            if GAME == True:
+                if self.get_state(ball, paddle, HGrid, YPad, Bricks)[1] < 1: # game is lost
+                    Lost =1
+                    break
             move, reset, previous_state = self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
             state_action = previous_state.tolist()
             state_action.append(move)
@@ -252,18 +256,21 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         Return = 0
         i=0
         for x in reversed_SA:
-            Return += -1
+            if Lost == 0:
+                Return += -1
+            else: 
+                Return = -250 # set penalty for a lost game
             # I apply first visit MC
             dummy = reversed_SA[(i+1):]
             i = i+1
             if x not in dummy:
-                Sum = self.AReturns[x]*self.COUNTER[x]
+                Sum = self.QA[x]*self.COUNTER[x]
                 Sum += Return
                 self.COUNTER[x] += 1 # state has occured one more time
-                self.AReturns[x] = Sum/self.COUNTER[x] # new average Return
-                self.QA[x] = self.AReturns[x] # new average Return
+                self.QA[x] = Sum/self.COUNTER[x] # new average Return
 
         return Return
+
     # train for Episodes numeber of episodes, print average return for every average number of episodes
     def Train(self, strategy, episode_setting, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX):
         Episode = []
@@ -271,7 +278,9 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         ReturnFifty = 0
         for i in range(0, Episodes):
             if strategy == STRATEGY_EXPLORING_STARTS_FIRST_VISIT and episode_setting == EPISODE_SETTING_CAPPED:
-                ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
+                ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, False)
+            elif strategy == STRATEGY_EXPLORING_STARTS_FIRST_VISIT and episode_setting == EPISODE_SETTING_GAME:
+                ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, True)
             else:
                 ReturnFifty += self.OnP_Episode(strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
             if i % average == 0 and not i == 0:

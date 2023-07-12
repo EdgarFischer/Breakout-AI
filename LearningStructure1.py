@@ -27,11 +27,11 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 
 AI = Tabular(Coordinates, HGrid, VGrid)
-N = 1000 # number of episodes for training
-N2 = 50 # print average return of N2 number of episodes very N2 number of episodes
-MAX = 50000 # maximum number of time steps, this is necessary to avoid a poor policy having an infinite game
+N = 1000000 # number of episodes for training
+N2 = 1000 # print average return of N2 number of episodes very N2 number of episodes
+MAX = 10000 # maximum number of time steps, this is necessary to avoid a poor policy having an infinite game
 E=0 # possible epsilon for epsilon greedy. Has to be set to 0 to guarante convergence
-Episode, Returns =AI.Train(TabularRL.STRATEGY_EXPLORING_STARTS_FIRST_VISIT, TabularRL.EPISODE_SETTING_CAPPED, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, E, MAX)
+Episode, Returns =AI.Train(TabularRL.STRATEGY_EXPLORING_STARTS_FIRST_VISIT, TabularRL.EPISODE_SETTING_GAME, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, E, MAX)
 
 Timesteps = [-x for x in Returns]
 
