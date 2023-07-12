@@ -8,6 +8,12 @@ import random
 import pickle
 import os
 
+STRATEGY_EXPLORING_STARTS_FIRST_VISIT = 'exploring_starts_first_visit'
+STRATEGY_ON_POLICY_E_SOFT_FIRST_VISIT = 'on_policy_e_soft_first_visit'
+STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT = 'on_policy_e_soft_every_visit'
+EPISODE_SETTING_CAPPED = 'episode_setting_capped'
+EPISODE_SETTING_GAME = 'episode_setting_game'
+
 class Tabular:   # the tabular object creates a state-action table with all possibilities
     def __init__(self,Coordinates, HGrid, VGrid):
         N = len(Coordinates)
@@ -139,7 +145,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return XB, YB, VBX, VBY, XP, VP, BRICKS
 
-    def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E): # take an epsilon greedy action, E is the probability of a random action
+    def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E, debug=False): # take an epsilon greedy action, E is the probability of a random action
         # first I need to retreive the state of the game
         state = self.get_state(ball, paddle, HGrid, YPad, Bricks)
         Left = np.append(state, 0).astype(int) # possible actions Left, Right or no paddle movement change
@@ -154,26 +160,65 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         max_indices = np.where(np.array([LeftQ,RightQ,ZeroQ]) == max_value)[0]
         random_index = random.choice(max_indices)
 
+        # if debug:
+        #     print("For state {} we have action values {}|{}|{}. Choosing {}!".format(state, LeftQ, RightQ, ZeroQ, random_index))
+
+        # with E probability, we choose a random action among ALL action (including the one that we would've picked anyways)
         if random.random() < E: # random move with probability E
-            return random.randint(0, 2)   
+            return random.randint(0, 2), state
         else:
-            return random_index
+            return random_index, state
         
-    def single_timestep(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E): # this function computes a single step of an episode
+    def single_timestep(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, debug=False): # this function computes a single step of an episode
         #the first check which move to do with the paddle
-        Move = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E)
+        Move, state = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E, debug=debug)
 
         if Move == 0:
             paddle.move_left()
         elif Move == 1:
             paddle.move_right()
 
-        ball.update(paddle, Bricks, HGrid, VGrid, YPad)
+        reset = ball.update(paddle, Bricks, HGrid, VGrid, YPad)
         paddle.update(HGrid)
 
-        return Move
-    
-    def ES_Episode(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None): #play a full episode and update QA in the end
+        return Move, reset, state
+
+    def OnP_Episode(self, strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, bricks, E, maximum_timesteps):
+        ball.reset_game(paddle, bricks, YPad)
+        SA = []  # these are the state-action pairs for this episode
+        # We assume here we will win. So the initial reward is +250
+        reward = 250
+        timestep = 0
+        while self.get_state(ball, paddle, HGrid, YPad, bricks)[-1] != 0:
+            if episode_setting == EPISODE_SETTING_CAPPED and timestep > maximum_timesteps:
+                # We ran into the timestep limit. So we subtract 250 from the reward again because the beginning assumption was violated
+                reward -= 250
+                break
+            move, reset, previous_state = self.single_timestep(HGrid, VGrid, YPad, paddle, ball, bricks, E, debug=timestep < 3)
+            state_action = previous_state.tolist()
+            state_action.append(move)
+            state_action = tuple(int(x) for x in state_action)
+            SA.append(state_action)
+            if reset and episode_setting == EPISODE_SETTING_GAME:
+                # We lost. So we subtract 250 from the reward again because the beginning assumption was violated
+                reward -= 250
+                break
+            timestep += 1
+
+        reversed_SA = SA[::-1]  # lastly I update the QA table
+        for i in range(len(reversed_SA)):
+            reward -= 1
+            current_sa = reversed_SA[i]
+            if strategy == STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT or current_sa not in reversed_SA[(i + 1):]:
+                Sum = self.AReturns[current_sa] * self.COUNTER[current_sa]
+                Sum += reward
+                self.COUNTER[current_sa] += 1  # state has occured one more time
+                self.AReturns[current_sa] = Sum / self.COUNTER[current_sa]  # new average Return
+                self.QA[current_sa] = self.AReturns[current_sa]  # new average Return
+
+        return reward
+
+    def ES_Episode(self, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX): #play a full episode and update QA in the end
         
         # first I initialize a random start in the middle of the episode, as is typical for an exploring start training mechanism
         XB, YB, VBX, VBY, XP, VP, BRICKS = Tabular.randome_state(HGrid, VGrid, Bricks)
@@ -196,14 +241,11 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         timestep = 0
         while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0 and timestep<MAX:
-            state_action = self.get_state(ball, paddle, HGrid, YPad, Bricks).tolist() 
-
-            Action = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E)    # you have to define the correct epsilon greedy action here
-
-            state_action.append(Action)
+            move, reset, previous_state = self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
+            state_action = previous_state.tolist()
+            state_action.append(move)
             state_action = tuple(int(x) for x in state_action)
             SA.append(state_action)
-            self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, E)
             timestep += 1
 
         reversed_SA = SA[::-1] # lastly I update the QA table
@@ -223,16 +265,19 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return Return
     # train for Episodes numeber of episodes, print average return for every average number of episodes
-    def Train(self, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX, state = None):
-        Episode=[]
-        Returns=[]
+    def Train(self, strategy, episode_setting, Episodes, average, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX):
+        Episode = []
+        Returns = []
         ReturnFifty = 0
-        for i in range(0,Episodes):
-            ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, RAND, MAX)
-            if i%average == 0 and not i == 0:
+        for i in range(0, Episodes):
+            if strategy == STRATEGY_EXPLORING_STARTS_FIRST_VISIT and episode_setting == EPISODE_SETTING_CAPPED:
+                ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
+            else:
+                ReturnFifty += self.OnP_Episode(strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
+            if i % average == 0 and not i == 0:
                 print(i)
                 print(ReturnFifty/average)
                 Episode.append(i)
                 Returns.append(ReturnFifty/average)
-                ReturnFifty=0
+                ReturnFifty = 0
         return Episode, Returns

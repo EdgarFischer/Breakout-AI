@@ -23,14 +23,8 @@ class Ball(Turtle):
         MAXY= YPAD + VGrid*50
 
         if self.ycor() + self.vy * MOVE < MINY:
-            self.vx = random.randint(-2, 2)  # random initial x velocity between -2 and 2
-            self.vy = 1  # the initial y velocity is always exactly 1
-            self.setx(0)
-            self.sety(YPAD + 50)
-            paddle.speed = 0
-            paddle.goto(x=0, y=YPAD)
-            bricks.reset()
-            return True
+            self.reset_game(paddle, bricks, YPAD)
+            return True, True
         if self.xcor()+self.vx*MOVE < MIN:
             self.setx(MIN)
             self.vx=-1*self.vx # reverse x velocity
@@ -43,7 +37,7 @@ class Ball(Turtle):
             self.setx(MAX)
             self.vx=-1*self.vx # reverse x velocity
             A = True
-        return A
+        return A, False
     
     def paddle_collision(self, paddle, YPAD): #check if the ball would collide with the paddle and adjust speed and position in this case
         A= True
@@ -91,7 +85,7 @@ class Ball(Turtle):
         # The paddle has the highest priority, if a collision with the paddle happens, this is used to determine the ball
         # everything else is not checked anymore
         A = self.paddle_collision(paddle, YPAD)
-        B = self.wall_collision(paddle,bricks,HGrid,VGrid,YPAD)
+        B, reset = self.wall_collision(paddle,bricks,HGrid,VGrid,YPAD)
 
         if not B and not A:
             bricks.check_for_collisions(self)
@@ -117,4 +111,13 @@ class Ball(Turtle):
 
         self.setx(new_X)
         self.sety(new_Y)
+        return reset
 
+    def reset_game(self, paddle, bricks, YPAD):
+        self.vx = random.randint(-2, 2)  # random initial x velocity between -2 and 2
+        self.vy = 1  # the initial y velocity is always exactly 1
+        self.setx(0)
+        self.sety(YPAD + 50)
+        paddle.speed = 0
+        paddle.goto(x=0, y=YPAD)
+        bricks.reset()

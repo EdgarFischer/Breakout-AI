@@ -27,11 +27,9 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 
 AI = Tabular(Coordinates, HGrid, VGrid)
-N = 1000 # number of episodes for training
-N2 = 50 # print average return of N2 number of episodes very N2 number of episodes
-MAX = 50000 # maximum number of time steps, this is necessary to avoid a poor policy having an infinite game
-E=0 # possible epsilon for epsilon greedy. Has to be set to 0 to guarante convergence
-Episode, Returns =AI.Train(TabularRL.STRATEGY_EXPLORING_STARTS_FIRST_VISIT, TabularRL.EPISODE_SETTING_CAPPED, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, E, MAX)
+N = 100000 # number of episodes for training
+N2 = 500 # print average return of N2 number of episodes very N2 number of episodes
+Episode, Returns = AI.Train(TabularRL.STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT, TabularRL.EPISODE_SETTING_GAME, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, 0.02, None)
 
 Timesteps = [-x for x in Returns]
 
@@ -40,8 +38,8 @@ plt.xlabel('Training episode')
 plt.ylabel('Average timesteps of last 1000 episodes')
 plt.yscale('log')
 plt.title('Convergence plot')
-plt.savefig('ConvergenceQTable1.png')
+plt.savefig('ConvergenceQTable_OnP_2.png')
 plt.show()
 
 
-Tabular.save_tabular_object(AI, 'Qtable1')
+Tabular.save_tabular_object(AI, 'Qtable_OnP_2')
