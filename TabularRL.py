@@ -11,6 +11,8 @@ import os
 STRATEGY_EXPLORING_STARTS_FIRST_VISIT = 'exploring_starts_first_visit'
 STRATEGY_ON_POLICY_E_SOFT_FIRST_VISIT = 'on_policy_e_soft_first_visit'
 STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT = 'on_policy_e_soft_every_visit'
+STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_FIRST_VISIT = 'off_policy_random_behavior_first_visit'
+STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_EVERY_VISIT = 'off_policy_random_behavior_every_visit'
 EPISODE_SETTING_CAPPED = 'episode_setting_capped'
 EPISODE_SETTING_GAME = 'episode_setting_game'
 
@@ -19,6 +21,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         N = len(Coordinates)
         self.QA = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3), dtype=np.int32)   
         self.COUNTER = np.zeros((HGrid, VGrid+1, 5, 2, HGrid-4, 5, 2**N, 3,), dtype=np.int32)
+        self.CSUM = np.zeros((HGrid, VGrid + 1, 5, 2, HGrid - 4, 5, 2 ** N, 3), dtype=object) # this one is used for weighted importance sampling for off-policy
         # QA will be the value function for state action pairs. For easier accessbility
         # I use a multidimensional tensor to save all state action pais using the numpy library
         # the logic is as follows:
@@ -30,6 +33,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         # 6. x-speed of paddle
         # 7. does brick exist y/bn
         # 8. take action left / right / none
+
 
         # note that the COUNTER simply counts how often states have occured. This is important
         # for updating averages without having to save all elements that have occurred.
@@ -144,7 +148,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         return XB, YB, VBX, VBY, XP, VP, BRICKS
 
-    def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E, debug=False): # take an epsilon greedy action, E is the probability of a random action
+    def Egreedy_move(self, ball, paddle, HGrid, YPad, Bricks, E, resolve_random=True, debug=False): # take an epsilon greedy action, E is the probability of a random action
         # first I need to retreive the state of the game
         state = self.get_state(ball, paddle, HGrid, YPad, Bricks)
         Left = np.append(state, 0).astype(int) # possible actions Left, Right or no paddle movement change
@@ -157,7 +161,10 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         max_value = np.max(np.array([LeftQ, RightQ, ZeroQ]))
         max_indices = np.where(np.array([LeftQ,RightQ,ZeroQ]) == max_value)[0]
-        random_index = random.choice(max_indices)
+        if resolve_random:
+            random_index = random.choice(max_indices)
+        else:
+            random_index = max_indices[0]
 
         # if debug:
         #     print("For state {} we have action values {}|{}|{}. Choosing {}!".format(state, LeftQ, RightQ, ZeroQ, random_index))
@@ -168,9 +175,9 @@ class Tabular:   # the tabular object creates a state-action table with all poss
         else:
             return random_index, state
         
-    def single_timestep(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, debug=False): # this function computes a single step of an episode
+    def single_timestep(self,  HGrid, VGrid, YPad, paddle, ball, Bricks, E, resolve_random=True, debug=False): # this function computes a single step of an episode
         #the first check which move to do with the paddle
-        Move, state = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E, debug=debug)
+        Move, state = self.Egreedy_move(ball, paddle, HGrid, YPad, Bricks, E, resolve_random=resolve_random, debug=debug)
 
         if Move == 0:
             paddle.move_left()
@@ -215,6 +222,54 @@ class Tabular:   # the tabular object creates a state-action table with all poss
                 self.QA[current_sa] = Sum / self.COUNTER[current_sa]  # new average Return     
                 
         return reward
+
+    def OffP_Episode(self, strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, bricks, E, maximum_timesteps):
+        ball.reset_game(paddle, bricks, YPad)
+        SA = []  # these are the state-action pairs for this episode
+        # We assume here we will win. So the initial reward is +250
+        reward = 250
+        timestep = 0
+        while self.get_state(ball, paddle, HGrid, YPad, bricks)[-1] != 0:
+            if episode_setting == EPISODE_SETTING_CAPPED and timestep > maximum_timesteps:
+                # We ran into the timestep limit. So we subtract 250 from the reward again because the beginning assumption was violated
+                reward -= 250
+                break
+            # For off-policy learning, we define our behavior-policy to be a pure random policy, this E=1.0
+            move, reset, previous_state = self.single_timestep(HGrid, VGrid, YPad, paddle, ball, bricks, E=1.0, debug=timestep < 3)
+            state_action = previous_state.tolist()
+            state_action.append(move)
+            state_action = tuple(int(x) for x in state_action)
+            SA.append(state_action)
+            if reset and episode_setting == EPISODE_SETTING_GAME:
+                # We lost. So we subtract 250 from the reward again because the beginning assumption was violated
+                reward -= 250
+                break
+            timestep += 1
+
+        uniform_prob_action = 1/3
+        reversed_SA = SA[::-1]  # lastly I update the QA table
+        i=0
+        for i in range(len(reversed_SA)):
+            reward -= 1
+            current_sa = reversed_SA[i]
+            if strategy == STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_EVERY_VISIT or current_sa not in reversed_SA[(i + 1):]:
+                self.CSUM[current_sa] = self.CSUM[current_sa] + (1/uniform_prob_action)**i
+                self.QA[current_sa] = self.QA[current_sa] + (((1/uniform_prob_action)**i) / self.CSUM[current_sa]) * (reward - self.QA[current_sa])
+                Left = np.append(current_sa[:-1], 0).astype(int)  # possible actions Left, Right or no paddle movement change
+                Right = np.append(current_sa[:-1], 1).astype(int)
+                Zero = np.append(current_sa[:-1], 2).astype(int)
+                LeftQ = self.QA[tuple(Left)]
+                RightQ = self.QA[tuple(Right)]
+                ZeroQ = self.QA[tuple(Zero)]
+                max_value = np.max(np.array([LeftQ, RightQ, ZeroQ]))
+                first_max_index = np.where(np.array([LeftQ, RightQ, ZeroQ]) == max_value)[0][0]
+                if current_sa[-1] != first_max_index:
+                    break
+
+        if i == len(reversed_SA)-1:
+            return reward
+        else:
+            return 0
 
     def ES_Episode(self, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, GAME): #play a full episode and update QA in the end
         # if GAME is set to true, the game ends after the ball passes the paddle,
@@ -281,8 +336,10 @@ class Tabular:   # the tabular object creates a state-action table with all poss
                 ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, False)
             elif strategy == STRATEGY_EXPLORING_STARTS_FIRST_VISIT and episode_setting == EPISODE_SETTING_GAME:
                 ReturnFifty += self.ES_Episode(HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, True)
-            else:
+            elif strategy in [STRATEGY_ON_POLICY_E_SOFT_FIRST_VISIT, STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT]:
                 ReturnFifty += self.OnP_Episode(strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
+            elif strategy in [STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_FIRST_VISIT, STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_EVERY_VISIT]:
+                ReturnFifty += self.OffP_Episode(strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
             if i % average == 0 and not i == 0:
                 print(i)
                 print(ReturnFifty/average)
