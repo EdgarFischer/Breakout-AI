@@ -15,8 +15,8 @@ YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[-3,9],[3,9],[-3,7],[3,7],[-3,5],[3,5],[0,8],[0,6]]
-AI = Tabular.load_tabular_object('Qtable_Bricks1_ONPMC') # load the correct AI here
+Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+AI = Tabular.load_tabular_object('Qtable_Bricks3_ONPMC') # load the correct AI here
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -73,22 +73,37 @@ def playing_game():
 
 Return = 0
 last_vx = -2
+returnsarr = [[],[],[],[],[]]
 def playing_gameAI():
     global Return
+    global last_vx
     # Scheduling the next time iteration already here to ensure 5 fps.
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
-    tr.ontimer(playing_gameAI, 100)
-    move,reset,state = AI.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, resolve_random=False)
+    tr.ontimer(playing_gameAI, 7)
+    move,reset,state = AI.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, resolve_random=True)
     if reset:
-	raise Exception("GAME LOST")
+        print("GAME LOST!")
+        Return -= 250
+        returnsarr[last_vx + 2].append(Return)
+        print(returnsarr)
+        Return = 0
+        ball.reset_game(paddle, bricks, YPAD)
+        last_vx += 1
+        if last_vx == 3:
+            last_vx = -2
+        ball.vx = last_vx
+        screen.update()
+        return
     Return += -1
     if bricks.all_bricks_disappeared():
         print("GAME WON!")
-        print('Return:')
-        print(Return)
+        returnsarr[last_vx+2].append(Return)
+        print(returnsarr)
         Return = 0
         ball.reset_game(paddle, bricks, YPAD)
-	last_vx += 1
+        last_vx += 1
+        if last_vx == 3:
+            last_vx = -2
         ball.vx = last_vx
     screen.update()
 
@@ -97,5 +112,13 @@ def playing_gameAI():
 ball.vx = -2
 tr.ontimer(playing_gameAI,200)
 tr.mainloop()
+
+
+# Average Return for Bricks1ONP: [-58.97058824, -65.79411765, -53.35294118, -65.82352941, -65.29411765]
+# Return for Bricks1OFFP: [-50, -50, -50, -58, -50]
+# Average Return for Bricks2ONP: [-57.76470588, -53.11764706, -53.52941176, -47.29411765, -57.58823529]
+# Return for Bricks2OFFP: [-44, -54, -48, -41, -44]
+# Average Return for Bricks3ONP: [-261,  -83.36666667,  -87.73333333,  -90.66666667,-261]
+# Return for Bricks3OFFP: [-96, -92, -88, -78, -85]
 
 
