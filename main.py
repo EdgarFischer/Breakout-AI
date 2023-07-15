@@ -15,8 +15,8 @@ YPAD = -275 # set the permanent Y position of the paddle
 
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
-Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
-AI = Tabular.load_tabular_object('Qtable_OffP_2') # load the correct AI here
+Coordinates = [[-3,9],[3,9],[-3,7],[3,7],[-3,5],[3,5],[0,8],[0,6]]
+AI = Tabular.load_tabular_object('Qtable_Bricks2_OFFPMC') # load the correct AI here
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -51,16 +51,6 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 # set the coordinate for Bricks
 
-# save the initial state, to be able to restart the game properly when watich the AI
-state = AI.get_state( ball, paddle, HGrid, YPAD, bricks)
-XB = state[0]
-YB = state[1]
-VBX= state[2]
-VBY= state[3]
-XP= state[4]
-VP=state[5]
-BRICKS = state[6]
-######################
 
 playing_game = True
  

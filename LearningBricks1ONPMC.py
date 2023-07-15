@@ -15,7 +15,7 @@ HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also 
 VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
-Coordinates = [[-3,9],[3,9],[-3,7],[3,7],[-3,5],[3,5],[0,8],[0,6]]
+Coordinates = [[-3,7],[0,7],[3,7],[-3,6],[0,6],[3,6]]
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -27,19 +27,19 @@ ball = Ball(YPAD)
 bricks = Bricks(Coordinates, YPAD)
 
 AI = Tabular(Coordinates, HGrid, VGrid)
-N = 10000 # number of episodes for training
-N2 = 500 # print average return of N2 number of episodes very N2 number of episodes
+N = 1000000 # number of episodes for training
+N2 = 1000 # print average return of N2 number of episodes very N2 number of episodes
 Episode, Returns = AI.Train(TabularRL.STRATEGY_ON_POLICY_E_SOFT_EVERY_VISIT, TabularRL.EPISODE_SETTING_GAME, N, N2, HGrid, VGrid, YPAD, paddle, ball, bricks, 0.02, None)
 
-Timesteps = [-x for x in Returns]
+# Timesteps = [-x for x in Returns]
 
-plt.scatter(Episode, Timesteps)
+plt.scatter(Episode, Returns)
 plt.xlabel('Training episode')
 plt.ylabel('Average timesteps of last 1000 episodes')
 plt.yscale('log')
 plt.title('Convergence plot')
-plt.savefig('ConvergenceQTable_OnP_3.png')
+plt.savefig('Convergence_Bricks1_ONPMC.png')
 plt.show()
 
 
-Tabular.save_tabular_object(AI, 'Qtable_OnP_3')
+Tabular.save_tabular_object(AI, 'Qtable_Bricks1_ONPMC')

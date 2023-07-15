@@ -248,7 +248,6 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         uniform_prob_action = 1/3
         reversed_SA = SA[::-1]  # lastly I update the QA table
-        i=0
         for i in range(len(reversed_SA)):
             reward -= 1
             current_sa = reversed_SA[i]
@@ -266,10 +265,7 @@ class Tabular:   # the tabular object creates a state-action table with all poss
                 if current_sa[-1] != first_max_index:
                     break
 
-        if i == len(reversed_SA)-1:
-            return reward
-        else:
-            return 0
+        return 0
 
     def ES_Episode(self, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX, GAME): #play a full episode and update QA in the end
         # if GAME is set to true, the game ends after the ball passes the paddle,
@@ -341,6 +337,25 @@ class Tabular:   # the tabular object creates a state-action table with all poss
             elif strategy in [STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_FIRST_VISIT, STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_EVERY_VISIT]:
                 ReturnFifty += self.OffP_Episode(strategy, episode_setting, HGrid, VGrid, YPad, paddle, ball, Bricks, E, MAX)
             if i % average == 0 and not i == 0:
+                if strategy in [STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_FIRST_VISIT, STRATEGY_OFF_POLICY_RANDOM_BEHAVIOR_EVERY_VISIT]:
+                    ReturnFifty=0
+                    for j in range(average):
+                        ball.reset_game(paddle, Bricks, YPad)
+                        ret = 250
+                        timestep = 0
+                        while self.get_state(ball, paddle, HGrid, YPad, Bricks)[-1] != 0:
+                            if episode_setting == EPISODE_SETTING_CAPPED and timestep > MAX:
+                                # We ran into the timestep limit. So we subtract 250 from the reward again because the beginning assumption was violated
+                                ret -= 250
+                                break
+                            move, reset, previous_state = self.single_timestep(HGrid, VGrid, YPad, paddle, ball, Bricks, 0, resolve_random=False)
+                            if reset and episode_setting == EPISODE_SETTING_GAME:
+                                # We lost. So we subtract 250 from the reward again because the beginning assumption was violated
+                                ret -= 250
+                                break
+                            timestep += 1
+                        ret -= timestep
+                        ReturnFifty += ret
                 print(i)
                 print(ReturnFifty/average)
                 Episode.append(i)

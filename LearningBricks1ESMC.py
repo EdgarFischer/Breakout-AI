@@ -40,8 +40,8 @@ plt.xlabel('Training episode')
 plt.ylabel('Average timesteps of last 1000 episodes')
 plt.yscale('log')
 plt.title('Convergence plot')
-plt.savefig('ConvergenceQTable3.png')
+plt.savefig('Convergence_Bricks1_ESMC.png')
 plt.show()
 
 
-Tabular.save_tabular_object(AI, 'Qtable3')
+Tabular.save_tabular_object(AI, 'Qtable_Bricks1_ESMC')

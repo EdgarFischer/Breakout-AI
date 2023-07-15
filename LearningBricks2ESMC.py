@@ -15,7 +15,7 @@ HGrid = 15 # dont set below 5 otherwise the paddle is too large! it should also 
 VGrid = 11 # has to be an uneven number!
 YPAD = -275 # set the permanent Y position of the paddle
 
-Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
+Coordinates = [[-3,9],[3,9],[-3,7],[3,7],[-3,5],[3,5],[0,8],[0,6]]
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -40,8 +40,8 @@ plt.xlabel('Training episode')
 plt.ylabel('Average timesteps of last 1000 episodes')
 plt.yscale('log')
 plt.title('Convergence plot')
-plt.savefig('ConvergenceQTable1.png')
+plt.savefig('Convergence_Bricks2_ESMC.png')
 plt.show()
 
 
-Tabular.save_tabular_object(AI, 'Qtable1')
+Tabular.save_tabular_object(AI, 'Qtable_Bricks2_ESMC')
