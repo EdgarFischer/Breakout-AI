@@ -161,6 +161,8 @@ class Tabular:   # the tabular object creates a state-action table with all poss
 
         max_value = np.max(np.array([LeftQ, RightQ, ZeroQ]))
         max_indices = np.where(np.array([LeftQ,RightQ,ZeroQ]) == max_value)[0]
+	if len(max_indices)>1:
+            raise Exception("bla")
         if resolve_random:
             random_index = random.choice(max_indices)
         else:

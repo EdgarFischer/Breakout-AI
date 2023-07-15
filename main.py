@@ -16,7 +16,7 @@ YPAD = -275 # set the permanent Y position of the paddle
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
 Coordinates = [[-3,9],[3,9],[-3,7],[3,7],[-3,5],[3,5],[0,8],[0,6]]
-AI = Tabular.load_tabular_object('Qtable_Bricks2_OFFPMC') # load the correct AI here
+AI = Tabular.load_tabular_object('Qtable_Bricks1_ONPMC') # load the correct AI here
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -72,12 +72,15 @@ def playing_game():
         # game is won!
 
 Return = 0
+last_vx = -2
 def playing_gameAI():
     global Return
     # Scheduling the next time iteration already here to ensure 5 fps.
     # This also means that the function calls below in this loop MUST COMFORTABLY have less runtime than 200ms!
     tr.ontimer(playing_gameAI, 100)
-    AI.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, resolve_random=False)
+    move,reset,state = AI.single_timestep(HGrid, VGrid, YPAD, paddle, ball, bricks, 0, resolve_random=False)
+    if reset:
+	raise Exception("GAME LOST")
     Return += -1
     if bricks.all_bricks_disappeared():
         print("GAME WON!")
@@ -85,11 +88,13 @@ def playing_gameAI():
         print(Return)
         Return = 0
         ball.reset_game(paddle, bricks, YPAD)
+	last_vx += 1
+        ball.vx = last_vx
     screen.update()
 
 
 # We work with timers here, since using the main thread with sleep calls will mess up the UI as the thread gets unnecessarily blocked
-
+ball.vx = -2
 tr.ontimer(playing_gameAI,200)
 tr.mainloop()
 
