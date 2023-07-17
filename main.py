@@ -16,7 +16,7 @@ YPAD = -275 # set the permanent Y position of the paddle
 #define the position of the bricks. Recall that 1 Brick extends 3 x 1, make sure they dont overlap
 # IMPORTANT: bricks must have a minimum distance from wall and paddle of 2 empty blocks. Otherwise, collision check order will not work!
 Coordinates = [[0,9],[3,9],[-3,9],[1,8],[4,8],[-2,8],[0,7],[3,7],[-3,7],[0,6]]
-AI = Tabular.load_tabular_object('Qtable_Bricks3_ONPMC') # load the correct AI here
+AI = Tabular.load_tabular_object('Qtable_Bricks3_ESMC') # load the correct AI here
 
 screen = tr.Screen()
 screen.setup(width=780, height=650) # this should not be changed, to display the game correctly
@@ -114,11 +114,25 @@ tr.ontimer(playing_gameAI,200)
 tr.mainloop()
 
 
+
+#Note: Except ONP and OFFP always trained for 1M (=1 million) episodes
 # Average Return for Bricks1ONP: [-58.97058824, -65.79411765, -53.35294118, -65.82352941, -65.29411765]
 # Return for Bricks1OFFP: [-50, -50, -50, -58, -50]
+
 # Average Return for Bricks2ONP: [-57.76470588, -53.11764706, -53.52941176, -47.29411765, -57.58823529]
 # Return for Bricks2OFFP: [-44, -54, -48, -41, -44]
+
 # Average Return for Bricks3ONP: [-261,  -83.36666667,  -87.73333333,  -90.66666667,-261]
 # Return for Bricks3OFFP: [-96, -92, -88, -78, -85]
+
+# Average Return for Bricks1ESMC 1M episodes:  [-61.27272727272727, -107.0, -50.0, -163.1, -83.6]
+# Average Return for Bricks1ESMC 10M episodes:  [-59.0, -60.18181818181818, -52.90909090909091, -58.0, -59.0]
+
+# Average Return for Bricks2ESMC 1M episodes:  [-57.666666666666664, -180.55555555555554, -125.5, -157.35294117647058, -57.470588235294116]
+# Average Return for Bricks2ESMC 10M episodes:  [-51.30769230769231, -124.07692307692308, -48.666666666666664, -41.0, -50.583333333333336]
+
+# Average Return for Bricks3ESMC 1M episodes:  [-232.45454545454547, -107.0, -190.0, -104.0, -192.6]
+# Average Return for Bricks3ESMC 10M episodes:  [-164.33333333333334, -80.0, -156.9090909090909, -80.0, -152.1818181818182]
+
 
 
