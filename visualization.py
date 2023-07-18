@@ -23,8 +23,8 @@ speeds = [-2, -1, 0, 1, 2]
 
 # Create a scatter plot for Bricks1
 plt.figure(figsize=(10, 6))
-plt.scatter(speeds, bricks1_onp, marker='o', label='On-Policy ε = 0.02')
-plt.scatter(speeds, bricks1_offp, marker='o', label='Off-Policy Random Behavior Policy')
+plt.scatter(speeds, bricks1_onp, marker='o', label='On-Policy ε = 0.02 1M episodes')
+plt.scatter(speeds, bricks1_offp, marker='o', label='Off-Policy Random Behavior Policy 1M episodes')
 plt.scatter(speeds, bricks1_esmc_1m, marker='o', label='Exploring Starts 1M episodes')
 plt.scatter(speeds, bricks1_esmc_10m, marker='o', label='Exploring Starts 10M episodes')
 plt.xlabel('Speeds')
@@ -39,8 +39,8 @@ plt.show()
 
 # Create a scatter plot for Bricks2
 plt.figure(figsize=(10, 6))
-plt.scatter(speeds, bricks2_onp, marker='o', label='On-Policy ε = 0.02')
-plt.scatter(speeds, bricks2_offp, marker='o', label='Off-Policy Random Behavior Policy')
+plt.scatter(speeds, bricks2_onp, marker='o', label='On-Policy ε = 0.02 1M episodes')
+plt.scatter(speeds, bricks2_offp, marker='o', label='Off-Policy Random Behavior Policy 1M episodes')
 plt.scatter(speeds, bricks2_esmc_1m, marker='o', label='Exploring Starts 1M episodes')
 plt.scatter(speeds, bricks2_esmc_10m, marker='o', label='Exploring Starts 10M episodes')
 plt.xlabel('Speeds')
@@ -55,8 +55,8 @@ plt.show()
 
 # Create a scatter plot for Bricks3
 plt.figure(figsize=(10, 6))
-plt.scatter(speeds, bricks3_onp, marker='o', label='On-Policy ε = 0.02')
-plt.scatter(speeds, bricks3_offp, marker='o', label='Off-Policy Random Behavior Policy')
+plt.scatter(speeds, bricks3_onp, marker='o', label='On-Policy ε = 0.02 1M episodes')
+plt.scatter(speeds, bricks3_offp, marker='o', label='Off-Policy Random Behavior Policy 1M episodes')
 plt.scatter(speeds, bricks3_esmc_1m, marker='o', label='Exploring Starts 1M episodes')
 plt.scatter(speeds, bricks3_esmc_10m, marker='o', label='Exploring Starts 10M episodes')
 plt.xlabel('Speeds')
