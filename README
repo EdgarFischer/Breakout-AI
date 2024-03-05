@@ -1,3 +1,14 @@
 To get the game running, you need to install Turtle/Tkinter via the following command (on Ubuntu):
 
 sudo apt-get install python3-tk
+
+In this code we coded the Atari Breakout game, programmed our own reinforcment learning algorithms to learn the game,
+and made them learn the game to perfection.
+
+Hauke was mainly responsible to code the game, create the interface between the AI and the game, and create a learning algorithm
+based on the exploring start algorithm.
+
+Christoph added more efficient learning algorihtms, namely on-policy and off-policy.
+
+Maciej did not contribute to the code, but helped create the presentation we had to present at the TU Wien.
+
